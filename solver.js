@@ -11,7 +11,7 @@
 // (cell index = row * 8 + column).
 
 const INF = 10000;
-const EXACT_TIME_SHARE = 0.55;          // share of the time limit given to the exact search
+const EXACT_TIME_SHARE = 0.8;           // share of the time limit given to the exact search
 const BEAM_WIDTHS = [1500, 6000, 24000, 96000];
 const BEAM_MAX_DEPTH = 256;
 const BEAM_DIR_ORDER = [1, 3, 0, 2];
@@ -205,6 +205,104 @@ class StateStore {
         for (let t = 0; t < old.length; t += 3) {
             if (old[t + 2] !== 0) this.insert(old[t], old[t + 1], old[t + 2]);
         }
+    }
+}
+
+// Open-addressing set of states with their BFS depth. A state is stored as a
+// (lo, hi) pair and the all-zero pair marks an empty slot (a real state always
+// holds at least one block). About 10 bytes per slot, no parent pointers: paths
+// are rebuilt from the depth labels.
+class DepthSet {
+    constructor(initialLog2 = 16) {
+        this.slots = 1 << initialLog2;
+        this.mask = this.slots - 1;
+        this.limit = Math.floor(this.slots * 0.75);
+        this.keys = new Int32Array(this.slots * 2);
+        this.depth = new Uint16Array(this.slots);
+        this.count = 0;
+    }
+
+    hash(lo, hi) {
+        let h = Math.imul(lo, 0x9E3779B1) ^ Math.imul(hi ^ (hi >>> 15), 0x85EBCA6B);
+        h ^= h >>> 16;
+        h = Math.imul(h, 0x7FEB352D);
+        h ^= h >>> 15;
+        return h & this.mask;
+    }
+
+    // Depth of the state, or -1 when it is not in the set.
+    get(lo, hi) {
+        const keys = this.keys;
+        let slot = this.hash(lo, hi);
+        while (true) {
+            const t = slot * 2;
+            const a = keys[t];
+            const b = keys[t + 1];
+            if (a === 0 && b === 0) return -1;
+            if (a === lo && b === hi) return this.depth[slot];
+            slot = (slot + 1) & this.mask;
+        }
+    }
+
+    // Adds the state when it is new and returns -1; otherwise returns the stored depth.
+    insert(lo, hi, depth) {
+        if (this.count >= this.limit) this.grow();
+        const keys = this.keys;
+        let slot = this.hash(lo, hi);
+        while (true) {
+            const t = slot * 2;
+            const a = keys[t];
+            const b = keys[t + 1];
+            if (a === 0 && b === 0) {
+                keys[t] = lo;
+                keys[t + 1] = hi;
+                this.depth[slot] = depth;
+                this.count++;
+                return -1;
+            }
+            if (a === lo && b === hi) return this.depth[slot];
+            slot = (slot + 1) & this.mask;
+        }
+    }
+
+    grow() {
+        const oldKeys = this.keys;
+        const oldDepth = this.depth;
+        this.slots *= 2;
+        this.mask = this.slots - 1;
+        this.limit = Math.floor(this.slots * 0.75);
+        this.keys = new Int32Array(this.slots * 2);
+        this.depth = new Uint16Array(this.slots);
+        const keys = this.keys;
+        for (let s = 0; s < oldDepth.length; s++) {
+            const lo = oldKeys[2 * s];
+            const hi = oldKeys[2 * s + 1];
+            if (lo === 0 && hi === 0) continue;
+            let slot = this.hash(lo, hi);
+            while (keys[2 * slot] !== 0 || keys[2 * slot + 1] !== 0) slot = (slot + 1) & this.mask;
+            keys[2 * slot] = lo;
+            keys[2 * slot + 1] = hi;
+            this.depth[slot] = oldDepth[s];
+        }
+    }
+}
+
+// Growable list of (lo, hi) pairs: one BFS level.
+class PairList {
+    constructor(capacity = 1024) {
+        this.buf = new Int32Array(capacity * 2);
+        this.n = 0;
+    }
+
+    push(lo, hi) {
+        if (this.n * 2 + 2 > this.buf.length) {
+            const bigger = new Int32Array(this.buf.length * 2);
+            bigger.set(this.buf);
+            this.buf = bigger;
+        }
+        this.buf[this.n * 2] = lo;
+        this.buf[this.n * 2 + 1] = hi;
+        this.n++;
     }
 }
 
@@ -494,89 +592,135 @@ class Solver {
         };
     }
 
-    // Exact search: BFS from the start and, in reverse, from the goal state.
-    // Returns { done: true, result } or { done: false, reason: 'time' | 'states' }.
-    solveBidirectional(deadline, maxStates) {
-        const F = new StateStore();
-        const B = new StateStore();
-        F.add(this.startLo, this.startHi, -1, 0, 0);
-        B.add(this.goalLo, this.goalHi, -1, 0, 0);
+    // Number of states that move into the state currently held in this.rows / this.cols,
+    // for one direction (the size of the list fillPredecessors would produce).
+    countPredecessors(dir) {
+        let total = 1;
+        if (dir >= 2) {
+            for (let r = 0; r < 8; r++) {
+                const len = this.revRows[dir][r][this.rows[r]].length;
+                if (len === 0) return 0;
+                total *= len;
+            }
+        } else {
+            const lineDir = dir === 0 ? 2 : 3;
+            for (let c = 0; c < 8; c++) {
+                const len = this.revCols[lineDir][c][this.cols[c]].length;
+                if (len === 0) return 0;
+                total *= len;
+            }
+        }
+        return total;
+    }
 
-        let fStart = 0;
-        let fEnd = 1;
-        let bStart = 0;
-        let bEnd = 1;
+    // Candidates a backward step over `front` would generate (counting stops once it passes `cap`).
+    backwardLevelCost(front, cap) {
+        let total = 0;
+        for (let i = 0; i < front.n; i++) {
+            this.unpack(front.buf[2 * i], front.buf[2 * i + 1]);
+            this.prepareColumns();
+            for (let d = 0; d < 4; d++) total += this.countPredecessors(d);
+            if (total > cap) return total;
+        }
+        return total;
+    }
+
+    // Exact search: level-by-level BFS from the start and, in reverse, from the goal.
+    // Each round expands the side whose next level is cheaper to generate, counted in
+    // candidate states. Going backwards can branch into thousands of predecessors per
+    // state while going forwards is at most 4, so the cheaper side is often the start.
+    // Returns { done: true, result } or { done: false, reason: 'time' | 'states', stats }.
+    solveBidirectional(deadline, maxStates) {
+        const F = new DepthSet();
+        const B = new DepthSet();
+        F.insert(this.startLo, this.startHi, 0);
+        B.insert(this.goalLo, this.goalHi, 0);
+
+        let fFront = new PairList();
+        let bFront = new PairList();
+        fFront.push(this.startLo, this.startHi);
+        bFront.push(this.goalLo, this.goalHi);
         let fDepth = 0;
         let bDepth = 0;
+
         let bestLen = Infinity;
-        let bestF = -1;
-        let bestB = -1;
+        let bestLo = 0;
+        let bestHi = 0;
+        let bestF = 0;
+        let bestB = 0;
 
-        while (fStart < fEnd && bStart < bEnd) {
-            // Any path not found yet is at least fDepth + bDepth + 1 long.
+        const stop = (reason) => ({
+            done: false,
+            reason,
+            stats: { forwardDepth: fDepth, backwardDepth: bDepth, states: F.count + B.count }
+        });
+
+        while (fFront.n > 0 && bFront.n > 0) {
+            // A path that has not been seen yet is at least fDepth + bDepth + 1 long.
             if (bestLen !== Infinity && fDepth + bDepth + 1 >= bestLen) break;
-            if (Date.now() > deadline) return { done: false, reason: 'time' };
-            if (F.size + B.size > maxStates) return { done: false, reason: 'states' };
+            if (Date.now() > deadline) return stop('time');
+            if (F.count + B.count > maxStates) return stop('states');
 
-            if (fEnd - fStart <= bEnd - bStart) {
+            const forwardCost = fFront.n * 4;
+            const backwardCost = this.backwardLevelCost(bFront, forwardCost);
+
+            if (forwardCost <= backwardCost) {
                 const nextDepth = fDepth + 1;
-                const end = fEnd;
-                for (let i = fStart; i < end; i++) {
-                    const lo = F.lo[i];
-                    const hi = F.hi[i];
+                const next = new PairList();
+                for (let i = 0; i < fFront.n; i++) {
+                    const lo = fFront.buf[2 * i];
+                    const hi = fFront.buf[2 * i + 1];
                     for (let d = 0; d < 4; d++) {
                         this.move(lo, hi, d);
                         const nlo = this.nlo;
                         const nhi = this.nhi;
                         if (nlo === lo && nhi === hi) continue;
-                        if (F.find(nlo, nhi) !== -1) continue;
-                        const ni = F.add(nlo, nhi, i, d, nextDepth);
-                        const bj = B.find(nlo, nhi);
-                        if (bj !== -1) {
-                            const len = nextDepth + B.depth[bj];
-                            if (len < bestLen) { bestLen = len; bestF = ni; bestB = bj; }
+                        if (F.insert(nlo, nhi, nextDepth) !== -1) continue;
+                        next.push(nlo, nhi);
+                        const other = B.get(nlo, nhi);
+                        if (other !== -1 && nextDepth + other < bestLen) {
+                            bestLen = nextDepth + other;
+                            bestLo = nlo; bestHi = nhi; bestF = nextDepth; bestB = other;
                         }
                     }
-                    if (((i - fStart) & 1023) === 1023) {
-                        if (Date.now() > deadline) return { done: false, reason: 'time' };
-                        if (F.size + B.size > maxStates) return { done: false, reason: 'states' };
+                    if ((i & 1023) === 1023) {
+                        if (Date.now() > deadline) return stop('time');
+                        if (F.count + B.count > maxStates) return stop('states');
                     }
                 }
-                fStart = end;
-                fEnd = F.size;
+                fFront = next;
                 fDepth = nextDepth;
             } else {
                 const nextDepth = bDepth + 1;
-                const end = bEnd;
-                for (let i = bStart; i < end; i++) {
-                    const lo = B.lo[i];
-                    const hi = B.hi[i];
+                const next = new PairList();
+                for (let i = 0; i < bFront.n; i++) {
+                    const lo = bFront.buf[2 * i];
+                    const hi = bFront.buf[2 * i + 1];
                     this.unpack(lo, hi);
                     this.prepareColumns();
                     for (let d = 0; d < 4; d++) {
-                        const count = this.fillPredecessors(d, maxStates - (F.size + B.size));
-                        if (count < 0) return { done: false, reason: 'states' };
+                        const count = this.fillPredecessors(d, maxStates - (F.count + B.count));
+                        if (count < 0) return stop('states');
                         const buf = this.predBuf;
                         for (let k = 0; k < count; k++) {
                             const plo = buf[2 * k];
                             const phi = buf[2 * k + 1];
                             if (plo === lo && phi === hi) continue;
-                            if (B.find(plo, phi) !== -1) continue;
-                            const ni = B.add(plo, phi, i, d, nextDepth);
-                            const fj = F.find(plo, phi);
-                            if (fj !== -1) {
-                                const len = nextDepth + F.depth[fj];
-                                if (len < bestLen) { bestLen = len; bestF = fj; bestB = ni; }
+                            if (B.insert(plo, phi, nextDepth) !== -1) continue;
+                            next.push(plo, phi);
+                            const other = F.get(plo, phi);
+                            if (other !== -1 && nextDepth + other < bestLen) {
+                                bestLen = nextDepth + other;
+                                bestLo = plo; bestHi = phi; bestF = other; bestB = nextDepth;
                             }
                         }
                     }
-                    if (((i - bStart) & 255) === 255) {
-                        if (Date.now() > deadline) return { done: false, reason: 'time' };
-                        if (F.size + B.size > maxStates) return { done: false, reason: 'states' };
+                    if ((i & 255) === 255) {
+                        if (Date.now() > deadline) return stop('time');
+                        if (F.count + B.count > maxStates) return stop('states');
                     }
                 }
-                bStart = end;
-                bEnd = B.size;
+                bFront = next;
                 bDepth = nextDepth;
             }
         }
@@ -584,14 +728,57 @@ class Solver {
         if (bestLen === Infinity) {
             return { done: true, result: this.fail('No solution exists for this board.') };
         }
+        return { done: true, result: this.rebuildExactPath(F, B, bestLo, bestHi, bestF, bestB) };
+    }
 
+    // Walks from the meeting state back to the start (using forward depths) and on to the goal
+    // (using backward depths). No parent pointers are stored, so every step looks for a
+    // neighbour whose depth label is exactly one smaller.
+    rebuildExactPath(F, B, lo, hi, forwardDepth, backwardDepth) {
         const prefix = [];
-        for (let n = bestF; F.parent[n] !== -1; n = F.parent[n]) prefix.push(F.dir[n]);
+        let curLo = lo;
+        let curHi = hi;
+        for (let level = forwardDepth; level > 0; level--) {
+            this.unpack(curLo, curHi);
+            this.prepareColumns();
+            let found = false;
+            for (let d = 0; d < 4 && !found; d++) {
+                const count = this.fillPredecessors(d, 50000000);
+                if (count < 0) return this.fail('Internal error: too many predecessors while rebuilding the path.');
+                const buf = this.predBuf;
+                for (let k = 0; k < count; k++) {
+                    if (F.get(buf[2 * k], buf[2 * k + 1]) === level - 1) {
+                        prefix.push(d);
+                        curLo = buf[2 * k];
+                        curHi = buf[2 * k + 1];
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found) return this.fail('Internal error: could not rebuild the path from the start.');
+        }
         prefix.reverse();
+
         const suffix = [];
-        for (let n = bestB; B.parent[n] !== -1; n = B.parent[n]) suffix.push(B.dir[n]);
+        curLo = lo;
+        curHi = hi;
+        for (let level = backwardDepth; level > 0; level--) {
+            let found = false;
+            for (let d = 0; d < 4 && !found; d++) {
+                this.move(curLo, curHi, d);
+                if (B.get(this.nlo, this.nhi) === level - 1) {
+                    suffix.push(d);
+                    curLo = this.nlo;
+                    curHi = this.nhi;
+                    found = true;
+                }
+            }
+            if (!found) return this.fail('Internal error: could not rebuild the path to the goal.');
+        }
+
         const dirs = prefix.concat(suffix);
-        return { done: true, result: this.makeResult(dirs, `Optimal solution in ${dirs.length} steps`) };
+        return this.makeResult(dirs, `Optimal solution in ${dirs.length} steps`);
     }
 
     // Guidance for the beam: smaller is better. Not a lower bound.
@@ -716,8 +903,11 @@ class Solver {
 
         const describe = (reason) => (reason === 'time' ? 'time limit reached'
             : reason === 'states' ? 'state budget reached' : reason);
+        const progress = exact.stats
+            ? ` after ${exact.stats.states.toLocaleString('en-US')} states (searched ${exact.stats.forwardDepth} steps from the start and ${exact.stats.backwardDepth} back from the targets)`
+            : '';
         return this.fail(
-            `No solution found. Exact search stopped (${describe(exact.reason)}); ` +
+            `No solution found. This does not mean the puzzle is unsolvable. Exact search stopped (${describe(exact.reason)})${progress}; ` +
             `beam search stopped (${describe(beam.reason)}). ` +
             'Try a longer time limit or a larger state budget.'
         );
