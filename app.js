@@ -406,7 +406,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const solverUrl = new URL('solver.js', document.baseURI).href;
+                // Same URL (including any ?v= cache-buster) as the <script> tag, so the worker
+                // never runs a different solver.js than the page.
+                const solverTag = typeof document.querySelector === 'function'
+                    ? document.querySelector('script[src*="solver.js"]')
+                    : null;
+                const solverUrl = solverTag && solverTag.src
+                    ? solverTag.src
+                    : new URL('solver.js', document.baseURI).href;
                 const source = `importScripts(${JSON.stringify(solverUrl)});
 self.onmessage = (e) => {
     const d = e.data;
