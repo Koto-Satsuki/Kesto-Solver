@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Kesto Puzzle Solver</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Kesto <span>Solver</span></h1>
+            <p>(Mostly) optimal solver.</p>
+        </header>
+
+        <main>
+            <div class="sidebar">
+                <h2>Tools</h2>
+                <div class="tools-palette">
+                    <button class="tool-btn active" data-tool=".">
+                        <div class="preview empty"></div>
+                        <span>Empty</span>
+                    </button>
+                    <button class="tool-btn" data-tool="#">
+                        <div class="preview wall"></div>
+                        <span>Wall</span>
+                    </button>
+                    <button class="tool-btn" data-tool="T">
+                        <div class="preview target"></div>
+                        <span>Target</span>
+                    </button>
+                    <button class="tool-btn" data-tool="Y">
+                        <div class="preview block"></div>
+                        <span>Block</span>
+                    </button>
+                </div>
+
+                <div class="actions">
+                    <button id="btn-edit" class="action-btn primary hidden">Edit Board</button>
+                    <button id="btn-solve" class="action-btn primary">Solve Puzzle</button>
+                    <button id="btn-clear" class="action-btn secondary">Clear Board</button>
+                </div>
+
+                <div class="status-panel" id="status-panel">
+                    <h3>Solver Status</h3>
+                    <p id="solver-message">Ready</p>
+                    <div id="solution-controls" class="hidden">
+                        <div class="step-info">
+                            Step <span id="current-step">0</span> / <span id="total-steps">0</span>
+                        </div>
+                        <div class="playback">
+                            <button id="btn-prev" class="play-btn">◀</button>
+                            <button id="btn-play" class="play-btn">▶</button>
+                        </div>
+                        <div class="path-display" id="path-display"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="board-container">
+                <div id="grid" class="grid">
+                    
+                </div>
+            </div>
+
+            <aside class="settings-panel" aria-label="Search settings">
+                <h2>Search</h2>
+
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <span>Time limit</span>
+                        <strong id="time-limit-value">9.5s</strong>
+                    </div>
+                    <input id="time-limit" type="range" min="1" max="30" step="0.5" value="9.5">
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <span>State budget</span>
+                        <strong id="state-budget-value">3.0M</strong>
+                    </div>
+                    <input id="state-budget" type="range" min="0.5" max="12" step="0.5" value="3">
+                </div>
+
+                <button id="btn-reset-settings" class="settings-reset" type="button">Reset defaults</button>
+            </aside>
+        </main>
+    </div>
+
+    <script src="solver.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
