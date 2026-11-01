@@ -1,0 +1,604 @@
+:root {
+    --color-bg: #1a1a1a;
+    --color-bg-raised: #222;
+    --color-bg-card: #2a2a2a;
+    --color-bg-hover: #333;
+    --color-bg-active: #3a3a3a;
+    --color-text: #e0e0e0;
+    --color-heading: #fff;
+    --color-secondary: #aaa;
+    --color-tertiary: #999;
+    --color-muted: #666;
+    --color-border: #333;
+    --color-border-light: #444;
+    --color-gold: #e8a54b;
+    --color-gold-hover: #d4953f;
+    --color-blue: #5b9bd5;
+    --color-blue-glow: rgba(91, 155, 213, 0.4);
+    --color-wall: #555;
+    --color-path-bg: #1f1f1f;
+    --text-primary: var(--color-text);
+    --text-secondary: var(--color-secondary);
+    --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-pressed: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button {
+    font-family: inherit;
+}
+
+/* Keyboard focus ring (mouse and touch users do not see it) */
+.tool-btn:focus-visible,
+.action-btn:focus-visible,
+.play-btn:focus-visible,
+.settings-reset:focus-visible,
+.setting-row input[type="range"]:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 1236px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+}
+
+header {
+    width: 100%;
+    max-width: 1052px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+header h1 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    color: var(--color-heading);
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+header h1 span {
+    color: var(--color-gold);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: lowercase;
+}
+
+header p {
+    color: var(--color-tertiary);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+main {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(320px, 480px) minmax(200px, 240px);
+    align-items: start;
+    justify-content: center;
+    gap: 16px;
+}
+
+.sidebar {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+h2,
+h3 {
+    color: var(--color-text);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.tools-palette,
+.actions,
+.status-panel,
+.settings-panel {
+    background: var(--color-bg-raised);
+    border-radius: 24px;
+    box-shadow: var(--shadow-card);
+}
+
+.tools-palette,
+.actions {
+    padding: 8px;
+}
+
+.status-panel {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-panel {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ---- Tool palette ---- */
+
+.tools-palette {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.tool-btn {
+    min-height: 88px;
+    background: var(--color-bg-card);
+    border: none;
+    border-radius: 16px;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+@media (hover: hover) {
+    .tool-btn:hover {
+        background: var(--color-bg-hover);
+    }
+}
+
+.tool-btn:active {
+    background: var(--color-bg-active);
+    transform: scale(0.98);
+}
+
+.tool-btn.active {
+    color: var(--color-gold);
+    background: color-mix(in srgb, var(--color-gold) 16%, var(--color-bg-card));
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-gold) 58%, transparent);
+}
+
+.preview {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+
+.preview.empty {
+    background: var(--color-bg-card);
+    box-shadow: inset 0 0 0 2px var(--color-border-light);
+}
+
+.preview.wall {
+    background: var(--color-wall);
+}
+
+.preview.target {
+    background: var(--color-bg-card);
+    box-shadow: inset 0 0 0 4px var(--color-blue);
+}
+
+.preview.block {
+    background: var(--color-gold);
+}
+
+/* ---- Action buttons ---- */
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.action-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+}
+
+.action-btn.primary {
+    background: var(--color-blue);
+    color: #111;
+    box-shadow: var(--shadow-card);
+}
+
+@media (hover: hover) {
+    .action-btn.primary:hover {
+        background: #4a8cc4;
+    }
+}
+
+.action-btn.primary:active {
+    background: #3e7cb0;
+    box-shadow: var(--shadow-pressed);
+    transform: translateY(1px);
+}
+
+.action-btn.secondary {
+    background: var(--color-bg-card);
+    color: var(--color-text);
+}
+
+@media (hover: hover) {
+    .action-btn.secondary:hover {
+        background: var(--color-bg-hover);
+    }
+}
+
+.action-btn.secondary:active {
+    background: var(--color-bg-active);
+    transform: translateY(1px);
+}
+
+.action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@media (hover: hover) {
+    .action-btn.secondary:disabled:hover {
+        background: var(--color-bg-card);
+    }
+}
+
+/* ---- Status panel ---- */
+
+.status-panel {
+    color: var(--color-secondary);
+}
+
+.status-panel p {
+    min-height: 20px;
+    margin: 0;
+    color: var(--color-secondary);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+/* Block / target counter added by app.js */
+#board-counts {
+    min-height: 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.status-panel h3 {
+    margin: 0;
+}
+
+.settings-panel h2 {
+    margin: 0;
+}
+
+/* ---- Search settings ---- */
+
+.setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.setting-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--color-secondary);
+    font-size: 13px;
+}
+
+.setting-label strong {
+    color: var(--color-text);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.setting-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--color-blue);
+    cursor: pointer;
+}
+
+.settings-reset {
+    min-height: 40px;
+    border: none;
+    border-radius: 14px;
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.12s ease;
+}
+
+@media (hover: hover) {
+    .settings-reset:hover {
+        background: var(--color-bg-hover);
+    }
+}
+
+.settings-reset:active {
+    background: var(--color-bg-active);
+    transform: translateY(1px);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---- Solution playback ---- */
+
+.step-info {
+    margin-top: 12px;
+    color: var(--color-tertiary);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.playback {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.play-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 16px;
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: var(--shadow-card);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (hover: hover) {
+    .play-btn:hover {
+        background: var(--color-bg-hover);
+    }
+}
+
+.play-btn:active {
+    background: var(--color-bg-active);
+    box-shadow: var(--shadow-pressed);
+}
+
+.path-display {
+    max-height: 92px;
+    overflow-y: auto;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: var(--color-path-bg);
+    color: var(--color-tertiary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+/* One <span> per move; app.js highlights the current one */
+.path-display span {
+    transition: color 0.12s ease;
+}
+
+/* ---- Board ---- */
+
+.board-container {
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+}
+
+.grid {
+    --pad: clamp(8px, 2.1vw, 12px);
+    --gap: clamp(4px, 1vw, 5px);
+    --radius: clamp(8px, 2vw, 12px);
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: var(--gap);
+    width: 100%;
+    height: 100%;
+    padding: var(--pad);
+    background: var(--color-bg-raised);
+    border-radius: calc(var(--radius) + var(--pad));
+    box-shadow: var(--shadow-card);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none; /* lets a finger drag to paint cells instead of scrolling */
+    position: relative;
+}
+
+.cell {
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+    background: var(--color-bg-card);
+    cursor: crosshair;
+    transition: background 0.1s ease, transform 0.08s ease, box-shadow 0.15s ease;
+    position: relative;
+}
+
+@media (hover: hover) {
+    .cell:hover {
+        background: var(--color-bg-hover);
+    }
+}
+
+.cell:active {
+    transform: scale(0.96);
+}
+
+.cell.wall {
+    background: var(--color-wall);
+}
+
+.cell.target {
+    background: var(--color-bg-card);
+    box-shadow: inset 0 0 0 clamp(3px, 0.8vw, 5px) var(--color-blue);
+}
+
+.cell.block {
+    background: var(--color-gold);
+}
+
+.cell.target.block {
+    background: var(--color-blue);
+    box-shadow: 0 0 14px var(--color-blue-glow);
+}
+
+/* Moving block shown during playback; size and position are set by app.js */
+.block-entity {
+    position: absolute;
+    border-radius: var(--radius);
+    background: var(--color-gold);
+    z-index: 10;
+    pointer-events: none;
+    transition: top 0.15s ease, left 0.15s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.block-entity.on-target {
+    background: var(--color-blue);
+    box-shadow: 0 0 14px var(--color-blue-glow);
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 820px) {
+    .app-container {
+        justify-content: flex-start;
+        padding: 16px;
+    }
+
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .board-container {
+        order: 1;
+        margin: 0 auto;
+    }
+
+    .sidebar {
+        order: 2;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    .settings-panel {
+        order: 3;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    header {
+        max-width: 480px;
+    }
+}
+
+@media (max-width: 520px) {
+    .app-container {
+        gap: 12px;
+    }
+
+    header h1 {
+        font-size: 24px;
+    }
+
+    header p {
+        display: none;
+    }
+
+    .tools-palette {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .tool-btn {
+        min-height: 72px;
+        font-size: 12px;
+        border-radius: 14px;
+    }
+
+    .preview {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+    }
+}
+
+/* Respect the "reduce motion" system setting */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+    }
+}
