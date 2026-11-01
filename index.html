@@ -4,54 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
+    <meta name="description" content="Solver for Kesto puzzles: place walls, targets and blocks, then find the shortest sequence of moves.">
     <title>Kesto Puzzle Solver</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <div class="app-container">
         <header>
             <h1>Kesto <span>Solver</span></h1>
-            <p>(Mostly) optimal solver.</p>
+            <p>Finds the shortest solution when the search budget allows.</p>
         </header>
+
+        <noscript>
+            <p style="color: var(--color-secondary); text-align: center;">This solver needs JavaScript.</p>
+        </noscript>
 
         <main>
             <div class="sidebar">
                 <h2>Tools</h2>
-                <div class="tools-palette">
-                    <button class="tool-btn active" data-tool=".">
+                <div class="tools-palette" role="group" aria-label="Drawing tools">
+                    <button class="tool-btn active" data-tool="." type="button">
                         <div class="preview empty"></div>
                         <span>Empty</span>
                     </button>
-                    <button class="tool-btn" data-tool="#">
+                    <button class="tool-btn" data-tool="#" type="button">
                         <div class="preview wall"></div>
                         <span>Wall</span>
                     </button>
-                    <button class="tool-btn" data-tool="T">
+                    <button class="tool-btn" data-tool="T" type="button">
                         <div class="preview target"></div>
                         <span>Target</span>
                     </button>
-                    <button class="tool-btn" data-tool="Y">
+                    <button class="tool-btn" data-tool="Y" type="button">
                         <div class="preview block"></div>
                         <span>Block</span>
                     </button>
                 </div>
 
                 <div class="actions">
-                    <button id="btn-edit" class="action-btn primary hidden">Edit Board</button>
-                    <button id="btn-solve" class="action-btn primary">Solve Puzzle</button>
-                    <button id="btn-clear" class="action-btn secondary">Clear Board</button>
+                    <button id="btn-edit" class="action-btn primary hidden" type="button">Edit Board</button>
+                    <button id="btn-solve" class="action-btn primary" type="button">Solve Puzzle</button>
+                    <button id="btn-clear" class="action-btn secondary" type="button">Clear Board</button>
                 </div>
 
                 <div class="status-panel" id="status-panel">
                     <h3>Solver Status</h3>
-                    <p id="solver-message">Ready</p>
+                    <p id="solver-message" role="status" aria-live="polite">Ready</p>
                     <div id="solution-controls" class="hidden">
                         <div class="step-info">
                             Step <span id="current-step">0</span> / <span id="total-steps">0</span>
                         </div>
                         <div class="playback">
-                            <button id="btn-prev" class="play-btn">◀</button>
-                            <button id="btn-play" class="play-btn">▶</button>
+                            <button id="btn-prev" class="play-btn" type="button" title="Previous step" aria-label="Previous step">◀</button>
+                            <button id="btn-play" class="play-btn" type="button" title="Next step" aria-label="Next step">▶</button>
                         </div>
                         <div class="path-display" id="path-display"></div>
                     </div>
@@ -59,9 +64,7 @@
             </div>
 
             <div class="board-container">
-                <div id="grid" class="grid">
-                    
-                </div>
+                <div id="grid" class="grid" role="application" aria-label="Puzzle board, 8 by 8"></div>
             </div>
 
             <aside class="settings-panel" aria-label="Search settings">
@@ -69,26 +72,31 @@
 
                 <div class="setting-row">
                     <div class="setting-label">
-                        <span>Time limit</span>
-                        <strong id="time-limit-value">9.5s</strong>
+                        <label for="time-limit">Time limit</label>
+                        <strong id="time-limit-value">60s</strong>
                     </div>
-                    <input id="time-limit" type="range" min="1" max="30" step="0.5" value="9.5">
+                    <input id="time-limit" type="range" min="1" max="180" step="0.5" value="60">
                 </div>
 
                 <div class="setting-row">
                     <div class="setting-label">
-                        <span>State budget</span>
-                        <strong id="state-budget-value">3.0M</strong>
+                        <label for="state-budget">State budget</label>
+                        <strong id="state-budget-value">30.0M</strong>
                     </div>
-                    <input id="state-budget" type="range" min="0.5" max="12" step="0.5" value="3">
+                    <input id="state-budget" type="range" min="0.5" max="60" step="0.5" value="30">
                 </div>
+
+                <p class="settings-hint">
+                    Long puzzles with many blocks can need over 20M states and half a minute.
+                    Memory is only used when the search needs it, roughly 20 to 25 MB per million states.
+                </p>
 
                 <button id="btn-reset-settings" class="settings-reset" type="button">Reset defaults</button>
             </aside>
         </main>
     </div>
 
-    <script src="solver.js"></script>
-    <script src="app.js"></script>
+    <script src="solver.js?v=3"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>
