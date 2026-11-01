@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDrawing = false;
     let lastDrawnKey = null;
 
-    const defaultSearchSettings = { timeSeconds: 9.5, stateMillions: 3 };
+    const defaultSearchSettings = { timeSeconds: 60, stateMillions: 30 };
 
     // ---- Helpers ----
     function setMessage(text, tone = 'muted') {
