@@ -351,6 +351,12 @@ h3 {
     cursor: pointer;
 }
 
+.settings-hint {
+    color: var(--color-tertiary);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 .settings-reset {
     min-height: 40px;
     border: none;
