@@ -593,7 +593,7 @@ self.onmessage = (e) => {
         spans.forEach((span, i) => {
             const isActive = i === currentStep - 1;
             span.style.color = isActive ? 'var(--color-gold)' : '';
-            span.style.fontWeight = isActive ? '700' : '';
+            span.style.fontWeight = '';
             if (isActive) active = span;
         });
         if (active) {
