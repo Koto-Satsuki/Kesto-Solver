@@ -87,7 +87,7 @@ header h1 {
     align-items: baseline;
     gap: 8px;
     color: var(--color-heading);
-    font-size: 28px;
+    font-size: 34px;
     line-height: 1;
     font-weight: 400;
     letter-spacing: -0.03em;
@@ -95,7 +95,7 @@ header h1 {
 
 header h1 span {
     color: inherit;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 400;
     letter-spacing: 0;
     text-transform: none;
@@ -103,7 +103,7 @@ header h1 span {
 
 header p {
     color: var(--color-tertiary);
-    font-size: 13px;
+    font-size: 16px;
     line-height: 1.4;
 }
 
@@ -128,7 +128,7 @@ main {
 h2,
 h3 {
     color: var(--color-text);
-    font-size: 13px;
+    font-size: 16px;
     line-height: 1.2;
     font-weight: 400;
     margin-bottom: 8px;
@@ -176,7 +176,7 @@ h3 {
     border: none;
     border-radius: 16px;
     color: var(--color-text);
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 400;
     cursor: pointer;
     display: flex;
@@ -241,7 +241,7 @@ h3 {
     padding: 10px 16px;
     border: none;
     border-radius: 16px;
-    font-size: 16px;
+    font-size: 19px;
     font-weight: 400;
     cursor: pointer;
     transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
@@ -303,14 +303,14 @@ h3 {
     min-height: 20px;
     margin: 0;
     color: var(--color-secondary);
-    font-size: 14px;
+    font-size: 17px;
     line-height: 1.45;
 }
 
 /* Block / target counter added by app.js */
 #board-counts {
     min-height: 0;
-    font-size: 12px;
+    font-size: 14px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -336,12 +336,12 @@ h3 {
     justify-content: space-between;
     gap: 12px;
     color: var(--color-secondary);
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .setting-label strong {
     color: var(--color-text);
-    font-size: 13px;
+    font-size: 16px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -353,7 +353,7 @@ h3 {
 
 .settings-hint {
     color: var(--color-tertiary);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5;
 }
 
@@ -364,7 +364,7 @@ h3 {
     background: var(--color-bg-card);
     color: var(--color-text);
     font: inherit;
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 400;
     cursor: pointer;
     transition: background 0.15s ease, transform 0.12s ease;
@@ -390,7 +390,7 @@ h3 {
 .step-info {
     margin-top: 12px;
     color: var(--color-tertiary);
-    font-size: 13px;
+    font-size: 16px;
     font-variant-numeric: tabular-nums;
     text-align: center;
 }
@@ -409,7 +409,7 @@ h3 {
     border-radius: 16px;
     background: var(--color-bg-card);
     color: var(--color-text);
-    font-size: 15px;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -438,7 +438,7 @@ h3 {
     background: var(--color-path-bg);
     color: var(--color-tertiary);
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5;
     word-break: break-word;
     user-select: text;
@@ -576,7 +576,7 @@ h3 {
     }
 
     header h1 {
-        font-size: 24px;
+        font-size: 29px;
     }
 
     header p {
@@ -589,7 +589,7 @@ h3 {
 
     .tool-btn {
         min-height: 72px;
-        font-size: 12px;
+        font-size: 14px;
         border-radius: 14px;
     }
 
