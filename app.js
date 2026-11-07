@@ -246,6 +246,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return !isSolving && solutionControls.classList.contains('hidden');
     }
 
+    // Painting with the tool a cell already shows erases that layer. The first cell of a
+    // stroke decides whether the whole stroke paints or erases, so dragging does not flicker.
+    let strokeErases = false;
+
+    function cellHasTool(r, c) {
+        if (currentTool === '#' || currentTool === 'T') return bgGrid[r][c] === currentTool;
+        if (currentTool === 'Y') return fgGrid[r][c] === 'Y';
+        return false;
+    }
+
     function applyTool(r, c) {
         stopAutoplay();
         solutionControls.classList.add('hidden');
@@ -258,6 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTool === '.') {
             bgGrid[r][c] = '.';
             fgGrid[r][c] = '.';
+        } else if (strokeErases) {
+            if (currentTool === 'Y') fgGrid[r][c] = '.';
+            else bgGrid[r][c] = '.';
         } else if (currentTool === '#' || currentTool === 'T') {
             bgGrid[r][c] = currentTool;
             if (currentTool === '#') fgGrid[r][c] = '.';
@@ -300,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         isDrawing = true;
         lastDrawnKey = null;
+        strokeErases = cellHasTool(Number(cell.dataset.r), Number(cell.dataset.c));
         drawAt(cell);
     });
     gridEl.addEventListener('pointermove', (e) => {
